@@ -8,7 +8,27 @@ class PriceRanges:
         self.ticker = ticker
         self.year = year
     '''-------------------------------'''
-    def get_all_quarters(self) -> dict:
+    def get_all_quarters(self, quarters: dict = {}) -> dict:
+        
+        if quarters != {}:
+            q1_start_month, q1_start_day = quarters["Q1_start"].split("/")
+            q1_end_month, q1_end_day = quarters["Q1_end"].split("/")
+            q2_start_month, q2_start_day = quarters["Q2_start"].split("/")
+            q2_end_month, q2_end_day = quarters["Q2_end"].split("/")
+            q3_start_month, q3_start_day = quarters["Q3_start"].split("/")
+            q3_end_month, q3_end_day = quarters["Q3_end"].split("/")
+            q4_start_month, q4_start_day = quarters["Q4_start"].split("/")
+            q4_end_month, q4_end_day = quarters["Q4_end"].split("/")
+        else:
+            q1_start_month, q1_start_day = 1, 1
+            q1_end_month, q1_end_day = 3, 31
+            q2_start_month, q2_start_day = 4, 1
+            q2_end_month, q2_end_day = 6, 30
+            q3_start_month, q3_start_day = 7, 1
+            q3_end_month, q3_end_day = 9, 30
+            q4_start_month, q4_start_day = 10, 1
+            q4_end_month, q4_end_day = 12, 31
+
 
         q1_data = self.get_quarter_data(start_month=1, start_day=1, end_month=3, end_day=31)
         q2_data = self.get_quarter_data(start_month=4, start_day=1, end_month=6, end_day=30)

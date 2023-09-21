@@ -1,12 +1,50 @@
+# Operating system imports
+import os
+
 import numpy as np
 import pandas as pd
 import yfinance as yf
 import datetime as dt
 
-from PriceRanges.priceranges import PriceRanges
+from PriceRanges.priceranges import PriceRanges, FiscalScraper
+
+# Get the current working directory. 
+cwd = os.getcwd()
 
 
-def get_annual_data(ticker: str, start_year: int = 2000, end_year: int =2023):
+# Custom quarter layouts for specific companies.
+avav_info =     {"annual": {
+                    "fiscal_start": "",
+                    "fiscal_end": "",
+                },
+                 "quarterly": {
+                    "Q1_start": "7/30",
+                    "Q1_end": "10/28",
+                    "Q2_start": "10/29",
+                    "Q2_end": "1/27",
+                    "Q3_start": "1/28",
+                    "Q3_end": "4/29",
+                    "Q4_start": "4/30",
+                    "Q4_end": "7/29",
+                 }}
+
+
+
+default_quarters = {}
+
+
+
+
+
+
+
+
+
+def get_annual_data(ticker: str, fiscal_data: dict = {}):
+
+    pr_dud = PriceRanges(ticker)
+    start_year = pr_dud.get_first_trading_year()
+    end_year = dt.datetime.now().year
 
     for i in range(start_year, end_year+1):
         pr = PriceRanges(ticker, year=i)
@@ -17,7 +55,13 @@ def get_annual_data(ticker: str, start_year: int = 2000, end_year: int =2023):
         else:
             print(f"\n\n-----------------\n{i}\n\nHigh: {data['High']}\nLow: {data['Low']}\n Average: {data['Average']}")
 
-def get_quarterly_data(ticker:str, start_year: int = 2000, end_year: int = 2023, quarters: dict = {}):
+def get_quarterly_data(ticker:str, quarters: dict = {}):
+
+    # Create PR_object to get the first trading year. 
+    pr_dud = PriceRanges(ticker)
+
+    start_year = pr_dud.get_first_trading_year()
+    end_year = dt.datetime.now().year
 
     for i in range(start_year, end_year+1):
         pr = PriceRanges(ticker, year=i)
@@ -36,6 +80,42 @@ def get_quarterly_data(ticker:str, start_year: int = 2000, end_year: int = 2023,
 
 
 
+
+
+def set_fiscal_data(ticker: str):
+    """
+    ticker: Ticker of a company. 
+    
+    Takes a ticker as a string. Searches a csv file names "quarterly_filings"
+    """
+
+    csv_file = pd.read_csv(cwd + "\\Filings\\quarterly_filings.csv")
+
+    # Check if the ticker is in the csv file. 
+    ticker_found = csv_file[csv_file["ticker"] == ticker]
+    
+    if ticker_found.empty:
+        # Create a "FiscalScraper" class object.
+        fs = FiscalScraper(ticker)
+        # Get the quarterly filings for the income statement. 
+        income_statement = fs.get_income_statement(frequency="q")
+        income_statement_cols = income_statement.columns
+        # Get the last 4 columns.
+        income_statement_cols = income_statement_cols[-4:]
+        # Get the fiscal year end for the company. 
+        fiscal_end = fs.get_fiscal_year_end_date()
+
+        fs.organize_quarters(income_statement_cols, fiscal_end=fiscal_end)
+
+        #print(f"Fiscal_end: {fiscal_end}     {income_statement}")
+    
+
+
+
+
+
+
+
 def main():
 
     default_quarters = {
@@ -49,8 +129,19 @@ def main():
         "Q4_end": "12/31" 
     }
 
-    ticker = "TSLA"
+    ticker = "AMZN"
+    set_fiscal_data(ticker)
     #get_annual_data(ticker)
-    get_quarterly_data(ticker)
+    #get_quarterly_data(ticker, quarters=default_quarters)
+
+"""
+
+TODO:
+
+Finish organize quarters function. 
+
+"""
+
+
 
 main()

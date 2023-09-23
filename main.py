@@ -12,7 +12,8 @@ from PriceRanges.priceranges import PriceRanges, FiscalScraper
 cwd = os.getcwd()
 # Path to csv file.
 csv_file_path = cwd + "\\Filings\\quarterly_filings.csv"
-
+# Path to "earnings.csv".
+earnings_csv = cwd + "\\Earnings\\"
 
 # Custom quarter layouts for specific companies.
 avav_info =     {"annual": {
@@ -184,11 +185,6 @@ def get_annual_data2(ticker: str):
     
 
 '''-------------------------------'''
-
-
-
-
-
 def set_fiscal_data(ticker: str):
     """
     ticker: Ticker of a company. 
@@ -205,14 +201,16 @@ def set_fiscal_data(ticker: str):
         # Create a "FiscalScraper" class object.
         fs = FiscalScraper(ticker)
         # Get the quarterly filings for the income statement. 
-        income_statement = fs.get_income_statement(frequency="q")
-        income_statement_cols = income_statement.columns.to_list()
-        # Get the last 4 columns.
-        income_statement_cols = income_statement_cols[-4:]
+        fiscal_dates = fs.get_fiscal_dates()
+        # Get the dates of the last 4 quarters for the company. 
+        last_4_quarters = fiscal_dates[:4].to_list()[::-1]
+        print(f'Last4: {last_4_quarters}')
+        #income_statement_cols = income_statement.columns.to_list()
+
         # Get the fiscal year end for the company. 
         fiscal_end = fs.get_fiscal_year_end_date()
         # Get the organized quarters. 
-        organized_quarters = fs.organize_quarters(income_statement_cols, fiscal_end=fiscal_end)
+        organized_quarters = fs.organize_quarters(last_4_quarters, fiscal_end=fiscal_end)
         organized_quarters = [organized_quarters]
         # Turn the dictionary into a list. The only element should be this dictionary. 
         # Update csv dataframe with new values. 
@@ -225,11 +223,58 @@ def set_fiscal_data(ticker: str):
         print(f"Data already in CSV")
 
 
-
-
-
-        #print(f"DF: {df}")
+'''-------------------------------'''
+def set_earnings(ticker: str, frequency: str = "q"):
+    '''
+    Description: Sets the earning estismates for the company in the csv file. 
+    :param ticker: Ticker of the company.
+    :return: None:
+    '''
+    # Number that decides if the program needs to fetch new data.
+    date_threshold = 90
     
+    # Fiscal Scraper object. 
+    fs = FiscalScraper(ticker=ticker)
+    # Path to earnings csv file for the ticker specified. 
+    earnings_file_path = earnings_csv + f"{ticker}.csv"
+    # Logic to handle csv reading. 
+    try:
+        
+        earnings_csv_data = pd.read_csv(earnings_file_path)
+        # Get the most recent reporting date. 
+        most_recent_reporting_date = earnings_csv_data["reportedDate"].iloc[0]
+        date_difference = fs.get_date_difference(target_date=most_recent_reporting_date, compare_date=str(dt.datetime.now().date()))
+        
+        # If date_difference is greater, fetch new data and write the new rows to the csv file. 
+        if date_difference > date_threshold:
+            # Fetch new earnings data. 
+            earnings = fs.get_earnings_estimates(frequency=frequency)
+            # Merge the dataframe from the csv file, and the new dataframe from the earnings file. 
+            merged_df = pd.concat([earnings_csv_data, earnings], ignore_index=True)
+            merged_df = merged_df.drop_duplicates()
+            merged_df.to_csv(earnings_file_path, header=True, index=False)
+        
+
+    except FileNotFoundError as e:
+        print(f"[Error] {e}")
+        # If the file is not found, fetch data and write to csv file. 
+        earnings = fs.get_earnings_estimates(frequency=frequency)
+        earnings.to_csv(earnings_file_path, header=True, index=False)
+
+    
+
+
+def test():
+    data1 = {"Col1": ["A", "B", "C"]}
+    df1 = pd.DataFrame(data1)
+
+    data2 = {"Col1": ["C", "D", "E"]}
+    df2 = pd.DataFrame(data2)
+
+
+    result = pd.concat([df1,df2], ignore_index=True)
+    result.drop_duplicates(inplace=True)
+    print(f"result: {result}")
 
 
 
@@ -250,15 +295,9 @@ def main():
         "Q4_end": "12/31" 
     }
 
-    ticker = "CHPT"
-    get_annual_data2(ticker)
-    #get_quarterly_data2(ticker)
-    #fs = FiscalScraper(ticker)
-    #fs.get_annual_price_data()
-    #set_fiscal_data(ticker)
-    #get_annual_data(ticker)
-    #get_quarterly_data(ticker, quarters=default_quarters)
-
+    ticker = "AMZN"
+    #test()
+    set_earnings(ticker=ticker)
 """
 
 TODO:

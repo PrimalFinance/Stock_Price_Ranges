@@ -37,6 +37,8 @@ chrome_options.add_argument("--disable-gpu")
 cwd = os.getcwd()
 # Path to csv file.
 csv_file_path = cwd + "\\Filings\\quarterly_filings.csv"
+# Path to "earnings.csv".
+earnings_csv = cwd + "\\Earnings\\"
 
 
 
@@ -48,9 +50,10 @@ class FiscalScraper:
     def __init__(self, ticker: str) -> None:
         self.ticker = ticker
         self.key = os.getenv("alpha_vantage_key")
+        self.earnings_csv = earnings_csv + f"{earnings_csv}.csv"
 
         # Root url to make queries. 
-        self.root_url = "https://www.alphavantage.co/"
+        self.root_url = "https://www.alphavantage.co/query"
 
         # Variables for financial statements.
         self.income_statement = pd.DataFrame()
@@ -134,6 +137,7 @@ class FiscalScraper:
 
         # If q4 is at the first index. [*12-31*, 03-31, 06-30, 09-30]
         if q4_index == 0:
+            print(f"TAG0: {quarters}")
             quarter_data = {
                 "ticker": self.ticker,
                 "Q1": quarters[1],
@@ -144,6 +148,7 @@ class FiscalScraper:
             }
         # If q4 is at the second index. [09-30, *12-31*, 03-31, 06-30]
         elif q4_index == 1:
+            print(f"TAG1: {quarters}")
             quarter_data = {
                 "ticker": self.ticker,
                 "Q1": quarters[2],
@@ -154,6 +159,7 @@ class FiscalScraper:
             }
         # If q4 is at the third index. [06-30, 09-30, *12-31*, 03-31]
         elif q4_index == 2:
+            print(f"TAG2: {quarters}")
             quarter_data = {
                 "ticker": self.ticker,
                 "Q1": quarters[3],
@@ -480,6 +486,84 @@ class FiscalScraper:
             print(f"Error: {e}")
             return None
     '''-------------------------------'''
+    def get_date_difference(self, target_date: str, compare_date: str):
+        '''
+        Description: Calculates the difference between the "target_date" and "compare_date".
+        
+        :param target_date: Main date. 
+        :param compare_date: Date to compare agains the main_date.
+        :return: Integer
+        '''
+
+        date_format = "%Y-%m-%d"
+
+        # Turn string dates into datetime objects. 
+        target_date = dt.datetime.strptime(target_date, date_format)
+        compare_date = dt.datetime.strptime(compare_date, date_format)
+        
+        # Check which date is larger. Subtract the smaller date from the larger date, to avoid negative values. 
+        if target_date > compare_date:
+            delta = target_date - compare_date
+        else:
+            delta = compare_date - target_date
+        difference = delta.days
+        return difference
+    '''------------------------------- Alpha Vantage Utilities -------------------------------'''
+    '''-------------------------------'''
+    def get_fiscal_dates(self, frequency: str = "q") -> pd.DataFrame:
+        '''
+        :param frequency: Determines to fetch quarterly or annual data. 
+        :return: A column from the dataframe, with all of the recent fiscal date, whether annual or quarterly. 
+        '''
+        if frequency in self.quarterly_params:
+            frequency = "quarterlyEarnings"
+        elif frequency in self.annual_params:
+            frequency = "annualEarnings"
+
+        # Construct the API request URL
+        endpoint = 'https://www.alphavantage.co/query'
+        params = {
+            'function': "EARNINGS",
+            'symbol': self.ticker,
+            'apikey': self.key
+        }
+
+        # Make the API request
+        response = requests.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            # Parse the JSON response
+            data = response.json()[frequency]
+            df = pd.DataFrame(data)
+            return df["fiscalDateEnding"]
+        else:
+            print(f"[Error] Retrieving Fiscal Dates")
+        
+    '''-------------------------------'''
+    def get_earnings_estimates(self, frequency: str = "q"):
+        if frequency in self.quarterly_params:
+            frequency = "quarterlyEarnings"
+        elif frequency in self.annual_params:
+            frequency = "annualEarnings"
+
+        # Construct the API request URL
+        endpoint = 'https://www.alphavantage.co/query'
+        params = {
+            'function': "EARNINGS",
+            'symbol': self.ticker,
+            'apikey': self.key
+        }
+
+        # Make the api request.
+        response = requests.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            # Parse the JSON response
+            data = response.json()[frequency]
+            df = pd.DataFrame(data) 
+            return df
+        else:
+            print(f"[Error] Retrieving Earnings Estimates")
     '''-------------------------------'''
     '''-------------------------------'''
     '''-------------------------------'''
@@ -491,7 +575,74 @@ class FiscalScraper:
     '''-------------------------------'''
     '''-------------------------------'''
     '''-------------------------------'''
-    '''-------------------------------'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class PriceRanges:

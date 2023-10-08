@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import datetime as dt
+from dateutil.parser import parse
+
 
 from PriceRanges.priceranges import PriceRanges, FiscalScraper
 
@@ -14,27 +16,6 @@ cwd = os.getcwd()
 csv_file_path = cwd + "\\Filings\\quarterly_filings.csv"
 # Path to "earnings.csv".
 earnings_csv = cwd + "\\Earnings\\"
-
-# Custom quarter layouts for specific companies.
-avav_info =     {"annual": {
-                    "fiscal_start": "",
-                    "fiscal_end": "",
-                },
-                 "quarterly": {
-                    "Q1_start": "7/30",
-                    "Q1_end": "10/28",
-                    "Q2_start": "10/29",
-                    "Q2_end": "1/27",
-                    "Q3_start": "1/28",
-                    "Q3_end": "4/29",
-                    "Q4_start": "4/30",
-                    "Q4_end": "7/29",
-                 }}
-
-
-
-default_quarters = {}
-
 
 
 
@@ -163,8 +144,24 @@ def get_annual_data2(ticker: str):
 
     first_trading_year = fs.get_first_trading_year()
 
+    # Get the q4 date.
+    fiscal_start = quarter_data_csv[quarter_data_csv["ticker"] == ticker]["Q4"].values[0]
+
+    #month, day = fiscal_start.split("-")
+    # Create datetime object. 
+    date_obj = parse(fiscal_start, dayfirst=True)
+
+    print(f"Type: {type(date_obj)}")
+    # Add one day after Q4, this represents the first day of Q1.
+    new_date = date_obj + dt.timedelta(days=1)
+
+    # Get the string for the month and day from the datetime object.
+    new_date = new_date.strftime("%m-%d")
+    
+
+
     fiscal_start_end = {
-        "fiscal_start": quarter_data_csv[quarter_data_csv["ticker"] == ticker]["Q1"].values[0],
+        "fiscal_start": new_date,
         "fiscal_end": quarter_data_csv[quarter_data_csv["ticker"] == ticker]["Q4"].values[0]
     }
 
@@ -284,28 +281,11 @@ def test():
 
 def main():
 
-    default_quarters = {
-        "Q1_start": "1/1",
-        "Q1_end": "3/31",
-        "Q2_start": "4/1",
-        "Q2_end": "6/30",
-        "Q3_start": "7/1",
-        "Q3_end": "9/30",
-        "Q4_start": "10/1",
-        "Q4_end": "12/31" 
-    }
-
-    ticker = "AMZN"
-    #test()
-    set_earnings(ticker=ticker)
-"""
-
-TODO:
-
-Finish organize quarters function. 
-
-"""
-
+    ticker = "RTX"
+    #get_quarterly_data2(ticker)
+    get_annual_data2(ticker=ticker)
+    #set_earnings(ticker=ticker)
+    #set_fiscal_data(ticker=ticker)
 
 
 main()

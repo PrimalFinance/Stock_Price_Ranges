@@ -281,7 +281,7 @@ def test():
 
 def main():
 
-    ticker = "RTX"
+    ticker = "SMCI"
     #get_quarterly_data2(ticker)
     get_annual_data2(ticker=ticker)
     #set_earnings(ticker=ticker)
